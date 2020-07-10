@@ -1,0 +1,52 @@
+---
+title: "Data test"
+output: html_notebook
+---
+
+
+```{r}
+
+
+library(dplyr)
+library(ggplot2)
+
+#TDR data
+soil_TDR <- read.csv(file = "TDR_analysis_AE_treatments.csv", head = TRUE, sep = ";", dec = ",", fileEncoding = "UTF-8-BOM")
+
+
+#select some plots
+soil_TDR <- soil_TDR %>%
+  group_by(Plot) %>%
+    filter(Plot < 50)
+
+
+#group measured values by date & fix date format
+soil_TDR <- soil_TDR %>%
+  group_by(Date)
+
+
+soil_TDR <- soil_TDR %>%
+ mutate(Date = as.Date(Date, format = c("%d.%m.%Y"),
+        optional = FALSE))
+
+
+
+```
+
+```{r}
+
+#plot
+
+soil_plot <- ggplot(data = soil_TDR, aes(x = Date, y = Moisture, color = as.factor(Plot))) +
+  theme_light() +
+  theme(axis.line = element_line(color = "black", size = 0.75, linetype = "solid")) +
+ geom_point() +
+  geom_line() +
+  scale_x_date(breaks = as.Date(soil_TDR[["Date"]]), labels = function(d) format(d, "%d.%m.")) +
+  labs(title = "Content of soil moisture", subtitle = "Measured at 28 cm depth on random plots.", caption = "Data sample from MSc work in AgriChar Research group.", x = "Date (2018)", y = "Moisture (%)") +
+  scale_colour_discrete("Plot number")
+
+
+soil_plot
+
+```

@@ -1,0 +1,70 @@
+---
+title: "Yield data plot"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+
+
+```{r}
+library(ggplot2)
+library(plyr)
+library(dplyr)
+
+#bar chart with sd example based on data collected in AgriChar research group (HY) for master's thesis
+#treatments in original data: A = no biochar applied. A1 = control, A2 = 100 kg N/ha Meat-bone meal fertilizer, A3 = 100 kg N/ha mineral fertilizer
+
+#get data
+yield_data <- read.csv(file = "YC_barley_2018.csv", head = TRUE, sep = ";", dec = ",", fileEncoding = "UTF-8-BOM")
+
+head(yield_data)
+
+
+#select above ground biomass and treatment with no biochar
+AGB <- yield_data %>%
+  select(Treatment, AGB_g_m2) %>%
+      filter(grepl("A", .$Treatment))
+
+AGB$Treatment <- as.factor(AGB$Treatment)
+
+
+#treatment types to vector
+treatments <- AGB[,1]
+
+
+#calculate mean and sd for biomass per treatment type
+AGB_summary <- function(AGB, AGB_g_m2, treatments){
+  sf_mean <- function(x, col){
+    c(mean = mean(x[[col]], na.rm = TRUE),
+    sd = sd(x[[col]], na.rm = TRUE))
+  }
+  sum_data <- ddply(AGB, treatments, .fun = sf_mean, AGB_g_m2)
+  
+  sum_data <- rename(sum_data, c("mean" = AGB_g_m2))
+  
+  return(sum_data)
+
+}
+
+#summarize
+sf_AGB <- AGB_summary(AGB, AGB_g_m2 = "AGB_g_m2", treatments = "Treatment")
+
+sf_AGB$Treatment = as.factor(sf_AGB$Treatment)
+
+
+#plot data with error bars
+AGB_plot <- ggplot(sf_AGB, aes(x = Treatment, y = AGB_g_m2)) +
+  theme(axis.title.x = element_text(margin = margin(t = 10, r = 0, b = 0, l = 0)), axis.title.y = element_text(margin = margin(t = 0, r = 10, b = 0, l = 0))) +
+  geom_col(width = 0.5, stat = "identity", color = "black", aes(fill = Treatment), show.legend = FALSE) +
+  scale_fill_manual(values = c(rep(c("darkseagreen", "darkolivegreen4", "darkslategray")))) +
+  geom_errorbar(width = 0.5, aes(ymin = AGB_g_m2 - sd, ymax = AGB_g_m2 + sd)) +
+  labs(title = "Above ground biomass for different fertilizer treatments", y = "g/m2", caption = "Data sample from MSc work in AgriChar Research group.") +
+  scale_x_discrete(labels=c("Control", "Meat-Bone meal 100 kg N/ha", "Mineral fertilizer 100 kg N/ha"))
+
+
+AGB_plot
+```
+
+
